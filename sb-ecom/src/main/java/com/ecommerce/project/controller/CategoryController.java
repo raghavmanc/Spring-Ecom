@@ -25,8 +25,11 @@ public class CategoryController {
     }
 
     @RequestMapping(value = "/public/categories", method = RequestMethod.GET)
-    public ResponseEntity<CategoryResponse> getCategories(){
-        return new ResponseEntity<>(categoryService.getCategories(),HttpStatus.OK);
+    public ResponseEntity<CategoryResponse> getCategories(
+            @RequestParam(name="pageNumber") Integer pageNumber,
+            @RequestParam(name = "pageSize") Integer pageSize)
+    {
+        return new ResponseEntity<>(categoryService.getCategories(pageNumber, pageSize),HttpStatus.OK);
     }
 
    @RequestMapping(value = "/public/categories",method = RequestMethod.POST)
@@ -36,15 +39,15 @@ public class CategoryController {
     }
 
     @DeleteMapping("/admin/categories/{categoryId}")
-    public ResponseEntity<String> deleteCategory(@PathVariable Long categoryId){
-            String status =  categoryService.deleteCategory(categoryId);
-            return new ResponseEntity<>(status, HttpStatus.OK);
+    public ResponseEntity<CategoryDTO> deleteCategory(@PathVariable Long categoryId){
+            CategoryDTO categoryDTO =  categoryService.deleteCategory(categoryId);
+            return new ResponseEntity<>(categoryDTO, HttpStatus.OK);
     }
 
     @PutMapping("/admin/categories/{categoryId}")
-    public ResponseEntity<String> updateCategory(@RequestBody Category category, @PathVariable Long categoryId){
-            String status = categoryService.updateCategory(category,categoryId);
-            return new ResponseEntity<>(status, HttpStatus.OK);
+    public ResponseEntity<CategoryDTO> updateCategory(@Valid @RequestBody CategoryDTO categoryDTO, @PathVariable Long categoryId){
+            CategoryDTO categoryDTO1 = categoryService.updateCategory(categoryDTO,categoryId);
+            return new ResponseEntity<>(categoryDTO1, HttpStatus.OK);
     }
 
 

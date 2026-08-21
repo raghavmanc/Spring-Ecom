@@ -8,6 +8,9 @@ import com.ecommerce.project.payload.CategoryResponse;
 import com.ecommerce.project.repositories.CategoryRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -25,13 +28,18 @@ public class CategoryServiceImpl implements CategoryService {
     private ModelMapper modelMapper;
 
     @Override
-    public CategoryResponse getCategories(){
-        List<Category> categories = categoryRepository.findAll();
+    public CategoryResponse getCategories(Integer pageNumber, Integer pageSize){
+
+        Pageable pageDetails = PageRequest.of(pageNumber,pageSize);
+        Page<Category> categoryPage = categoryRepository.findAll(pageDetails);
+
+        List<Category> categories = categoryPage.getContent();
+
         if (categories.isEmpty()) throw new APIException("No Categories to fetch");
 
         List<CategoryDTO> categoryDTOS = categories.stream().map(category -> modelMapper.map(category, CategoryDTO.class)).toList();
 
-        return new CategoryResponse(categoryDTOS);
+        return new CategoryResponse(categoryDTOS,categoryPage.getNumber(),categoryPage.getSize(),categoryPage.getTotalElements(),categoryPage.getTotalPages(),categoryPage.isLast());
     }
 
     @Override
@@ -46,33 +54,25 @@ public class CategoryServiceImpl implements CategoryService {
 
 
     @Override
-    public String deleteCategory(Long categoryId) {
+    public CategoryDTO deleteCategory(Long categoryId) {
+
         List<Category> categories = categoryRepository.findAll();
 
-        Category category = categories.stream()
-                .filter(c -> c.getCategoryId().equals(categoryId))
-                .findFirst()
+        Category category = categoryRepository.findById(categoryId)
                 .orElseThrow( () -> new ResourceNotFound("Category", "CategoryId",categoryId));
 
         categoryRepository.delete(category);
-        return "Category " + category.getCategoryName() + " Deleted!";
+        return modelMapper.map(category,CategoryDTO.class);
     }
 
     @Override
-    public String updateCategory(Category category, Long categoryId) {
+    public CategoryDTO updateCategory(CategoryDTO categoryDTO, Long categoryId) {
 
-        List<Category> categories = categoryRepository.findAll();
-
-        Category tempCategory = categories.stream()
-                .filter(c -> c.getCategoryId().equals(categoryId))
-                .findFirst()
+        Category tempCategory = categoryRepository.findById(categoryId)
                 .orElseThrow( () -> new ResourceNotFound("Category", "CategoryId",categoryId));
 
-        String oldCategoryName = tempCategory.getCategoryName();
-        tempCategory.setCategoryName(category.getCategoryName());
-        categoryRepository.save(tempCategory);
-
-        return "Category with id " + categoryId + " name changed from "+ oldCategoryName + " to " + tempCategory.getCategoryName();
+        tempCategory.setCategoryName(categoryDTO.getCategoryName());
+        return modelMapper.map(categoryRepository.save(tempCategory),CategoryDTO.class);
     }
 
 }
